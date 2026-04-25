@@ -75,6 +75,23 @@ http://localhost:8080/smartcampuscwk/api/v1
 | POST | `/api/v1/sensors/{sensorId}/readings` | Add a new reading |
 
 ---
+## Error Handling
+
+- 409 = RoomNotEmptyException
+- 422 = LinkedResourceNotFoundException
+- 403 = SensorUnavailableException
+- 500 = GlobalExceptionMapper
+
+---
+
+## Logging
+
+A JAX-RS filter logs:
+- HTTP method
+- Request URI
+- Response status
+
+---
 
 # REPORT
 
