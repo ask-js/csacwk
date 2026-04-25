@@ -75,6 +75,52 @@ http://localhost:8080/smartcampuscwk/api/v1
 | POST | `/api/v1/sensors/{sensorId}/readings` | Add a new reading |
 
 ---
+
+## Example API Usage (curl)
+
+### Create a Room
+```bash
+curl --location "http://localhost:8080/smartcampuscwk/api/v1/rooms" \
+--header 'Content-Type: application/json' \
+--data '{
+  "id": "LG01",
+  "name": "Lower Computer Room",
+  "capacity": 80,
+  "sensorIds": []
+}'
+```
+### Get All Rooms
+```bash
+curl --location "http://localhost:8080/smartcampuscwk/api/v1/rooms"
+```
+### Create a Sensor
+```bash
+curl --location "http://localhost:8080/smartcampuscwk/api/v1/sensors" \
+--header 'Content-Type: application/json' \
+--data '{
+  "id": "TEMP-001",
+  "type": "Temperature",
+  "status": "ACTIVE",
+  "currentValue": 29.5,
+  "roomId": "LG01"
+}'
+```
+### Delete a Room
+```bash
+curl --location --request DELETE 'http://localhost:8080/smartcampuscwk/api/v1/rooms/LG01'
+```
+
+### Add a Sensor Reading
+```bash
+curl --location 'http://localhost:8080/smartcampuscwk/api/v1/sensors/TEMP-001/readings' \
+--header 'Content-Type: application/json' \
+--data '{
+  "id": "READ-001",
+  "timestamp": 1713970000000,
+  "value": 25.8
+}'
+```
+--- 
 ## Error Handling
 
 - 409 = RoomNotEmptyException
