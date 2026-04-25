@@ -137,8 +137,8 @@ curl --location 'http://localhost:8080/smartcampuscwk/api/v1/sensors/TEMP-001/re
 --header 'Content-Type: application/json' \
 --data '{
   "id": "READ-001",
-  "timestamp": 1713970000000,
-  "value": 25.8
+  "timestamp": 1259,
+  "value": 32.2
 }'
 ```
 --- 
