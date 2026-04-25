@@ -22,6 +22,27 @@ The API includes:
 
 No external database is used, as required by the coursework.
 
+##  Getting the Project
+
+You can clone the repository using Git:
+
+```bash
+git clone https://github.com/ask-js/csacwk
+```
+Alternatively, download the project as a ZIP from GitHub and extract it locally.
+
+
+### Prerequisites
+
+Before running the project, ensure you have the following installed:
+
+- Java (JDK 8 or above)
+- Apache Tomcat (v9 or compatible)
+- NetBeans IDE (or any Java IDE)
+- Maven (if not already configured in NetBeans)
+
+---
+
 ## How to Run the Project
 
 1. Open Apache NetBeans.
