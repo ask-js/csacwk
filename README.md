@@ -97,50 +97,129 @@ http://localhost:8080/smartcampuscwk/api/v1
 
 ---
 
+## How to Test with curl
+
+curl lets you make HTTP requests from the terminal. It is pre-installed on Mac and Linux. On Windows, use **Git Bash** or **PowerShell**. Try to avoid using standard Command Prompt as it handles quotes differently which may cause an issue when you run the commands.
+
+Make sure the server is running before running any of the commands below.
+
+---
+
 ## Example API Usage (curl)
 
-### Create a Room
-```bash
-curl --location "http://localhost:8080/smartcampuscwk/api/v1/rooms" \
---header 'Content-Type: application/json' \
---data '{
+### 1. Get API Discovery Info
+```
+curl -X GET "http://localhost:8080/smartcampuscwk/api/v1"
+```
+**Expected Response (200 OK):**
+```json
+{
+  "api name": "Smart Campus Sensor & Room Management API",
+  "version": "v1",
+  "contact": "w2107727@westminster.ac.uk",
+  "resources": {
+    "rooms": "/api/v1/rooms",
+    "sensors": "/api/v1/sensors"
+  }
+}
+```
+
+---
+
+### 2. Create a Room
+```
+curl -X POST "http://localhost:8080/smartcampuscwk/api/v1/rooms" -H "Content-Type: application/json" -d "{\"id\": \"LG01\", \"name\": \"Lower Computer Room\", \"capacity\": 80, \"sensorIds\": []}"
+```
+**Expected Response (201 Created):**
+```json
+{
   "id": "LG01",
   "name": "Lower Computer Room",
   "capacity": 80,
   "sensorIds": []
-}'
+}
 ```
-### Get All Rooms
-```bash
-curl --location "http://localhost:8080/smartcampuscwk/api/v1/rooms"
+
+---
+
+### 3. Get All Rooms
 ```
-### Create a Sensor
-```bash
-curl --location "http://localhost:8080/smartcampuscwk/api/v1/sensors" \
---header 'Content-Type: application/json' \
---data '{
+curl -X GET "http://localhost:8080/smartcampuscwk/api/v1/rooms"
+```
+**Expected Response (200 OK):**
+```json
+[
+  {
+    "id": "LG01",
+    "name": "Lower Computer Room",
+    "capacity": 80,
+    "sensorIds": []
+  }
+]
+```
+
+---
+
+### 4. Create a Sensor
+```
+curl -X POST "http://localhost:8080/smartcampuscwk/api/v1/sensors" -H "Content-Type: application/json" -d "{\"id\": \"TEMP-001\", \"type\": \"Temperature\", \"status\": \"ACTIVE\", \"currentValue\": 29.5, \"roomId\": \"LG01\"}"
+```
+**Expected Response (201 Created):**
+```json
+{
   "id": "TEMP-001",
   "type": "Temperature",
   "status": "ACTIVE",
   "currentValue": 29.5,
   "roomId": "LG01"
-}'
-```
-### Delete a Room
-```bash
-curl --location --request DELETE 'http://localhost:8080/smartcampuscwk/api/v1/rooms/LG01'
+}
 ```
 
-### Add a Sensor Reading
-```bash
-curl --location 'http://localhost:8080/smartcampuscwk/api/v1/sensors/TEMP-001/readings' \
---header 'Content-Type: application/json' \
---data '{
-  "id": "READ-001",
-  "timestamp": 1259,
-  "value": 32.2
-}'
+---
+
+### 5. Filter Sensors by Type
 ```
+curl -X GET "http://localhost:8080/smartcampuscwk/api/v1/sensors?type=Temperature"
+```
+**Expected Response (200 OK):**
+```json
+[
+  {
+    "id": "TEMP-001",
+    "type": "Temperature",
+    "status": "ACTIVE",
+    "currentValue": 29.5,
+    "roomId": "LG01"
+  }
+]
+```
+
+---
+
+### 6. Add a Sensor Reading
+```
+curl -X POST "http://localhost:8080/smartcampuscwk/api/v1/sensors/TEMP-001/readings" -H "Content-Type: application/json" -d "{\"id\": \"READ-001\", \"timestamp\": 1745 \"value\": 32.2}"
+```
+**Expected Response (201 Created):**
+```json
+{
+  "id": "READ-001",
+  "timestamp": 1745,
+  "value": 32.2
+}
+```
+
+---
+
+### 7. Delete a Room (with no sensors assigned)
+```
+curl -X DELETE "http://localhost:8080/smartcampuscwk/api/v1/rooms/LG01"
+```
+**Expected Response (200 OK):**
+```
+"Room deleted successfully"
+```
+
 --- 
 ## Error Handling
 
@@ -171,11 +250,11 @@ singleton? Elaborate on how this architectural decision impacts the way you mana
 synchronize your in-memory data structures (maps/lists) to prevent data loss or race conditions.
 
 ### A:
-In a default JAX-RS lifecycle, a new instance of a resource class is created for each incoming request, rather than using a single shared instance. For example, every time a request is made to RoomResource, a new object is created to handle it, and then discarded after the response is sent. This makes the resource classes request-scoped as opposed to being singletons. 
+In a default JAX-RS lifecycle, a new instance of a resource class is created for each incoming request rather than using a single shared instance. For example, every time a request is made to RoomResource, a new object is created to handle it and then discarded after the response is sent. This makes the resource classes request-scoped as opposed to being singletons.
 
-Because of this, any data stored inside the resource class itself would be lost between requests, as each request gets a fresh instance. To solve this, I used a separate DataStorage class with static HashMap and ArrayList structures so that the data is shared across all requests. This allows the API to maintain state without using a database like SQL, which follows the coursework requirements.
+Because of this, any data stored inside the resource class itself would be lost between requests as each request gets a fresh instance. To solve this, I used a separate DataStorage class with static HashMap and ArrayList structures so that the data is shared across all requests. This allows the API to maintain state without using a database, which follows the coursework requirements.
 
-However, this approach does introduce potential concurrency issues, since multiple requests could access and modify the same data at the same time. In this implementation, this was an acceptable risk due to the small scale of the application but in a real-world system, thread-safe structures such as ConcurrentHashMap or synchronisation techniques would have been used instead to prevent race conditions.
+However, this approach introduces potential concurrency issues, since multiple requests could access and modify the same static data at the same time. The correct production approach would be to use thread-safe structures such as ConcurrentHashMap or to apply synchronized blocks around critical sections to prevent race conditions and data corruption. In this implementation, standard HashMap was used due to the small scale of the application, but this would not be acceptable in a real-world concurrent environment.
 
 ### Q:
 >Why is the provision of ”Hypermedia” (links and navigation within responses)
@@ -222,9 +301,9 @@ a different format, such as text/plain or application/xml. How does JAX-RS handl
 Mismatch?
 
 ### A:
-The @Consumes(MediaType.APPLICATION_JSON) annotation restricts the method to only accept JSON input. If a client sends data in a different format, such as text or xml, JAX-RS will automatically reject the request with a 415 Unsupported Media Type response. This happens before the method is executed, as JAX-RS validates the Content-Type header against the @Consumes annotation.
+The @Consumes(MediaType.APPLICATION_JSON) annotation restricts the POST method so that it only accepts request bodies with the Content-Type: application/json header. If a client sends data in another format, such as text/plain or application/xml, JAX-RS rejects the request with 415 Unsupported Media Type. This happens during request matching, before the resource method is executed, because the runtime checks the request Content-Type against the method’s @Consumes annotation.
 
-However, in my implementation I have included a global ExceptionMapper<Throwable> as part of Part 5. This mapper catches all unhandled exceptions and returns a generic 500 Internal Server Error. As a result, instead of returning the expected 415 error, the request may return a 500 response due to the global exception handler overriding the default JAX-RS behaviour.
+In my implementation, the global ExceptionMapper<Throwable> is only used as a final safety net for unexpected server-side exceptions such as NullPointerException. It should not normally override the expected 415 response because the unsupported media type is handled by the JAX-RS runtime before the method runs. Therefore, a non-JSON request should return 415 unless an additional unexpected server-side exception occurs.
 
 ### Q:
 >You implemented this filtering using @QueryParam. Contrast this with an alterna-
