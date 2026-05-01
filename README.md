@@ -254,7 +254,8 @@ In a default JAX-RS lifecycle, a new instance of a resource class is created for
 
 Because of this, any data stored inside the resource class itself would be lost between requests as each request gets a fresh instance. To solve this, I used a separate DataStorage class with static HashMap and ArrayList structures so that the data is shared across all requests. This allows the API to maintain state without using a database, which follows the coursework requirements.
 
-However, this approach introduces potential concurrency issues, since multiple requests could access and modify the same static data at the same time. The correct production approach would be to use thread-safe structures such as ConcurrentHashMap or to apply synchronized blocks around critical sections to prevent race conditions and data corruption. In this implementation, standard HashMap was used due to the small scale of the application, but this would not be acceptable in a real-world concurrent environment.
+However, this approach introduces potential concurrency issues, since multiple requests could access and modify the same static data at the same time. The correct production approach would be to use thread-safe structures such as ConcurrentHashMap or to apply synchronized blocks around critical sections to prevent race conditions and data corruption. In this implementation, standard HashMap was used due to the small scale of the application but this would not be acceptable in a real-world concurrent environment.
+
 
 ### Q:
 >Why is the provision of ”Hypermedia” (links and navigation within responses)
@@ -262,9 +263,10 @@ considered a hallmark of advanced RESTful design (HATEOAS)? How does this approa
 benefit client developers compared to static documentation?
 
 ### A:
-Hypermedia is considered a hallmark of advanced RESTful design because it allows the API to return not just data, but also links that guide the client on what actions can be performed next. Instead of simply receiving raw data, the client can navigate the API dynamically using the links provided in the response, which is the core idea behind HATEOAS.
+Hypermedia is considered a hallmark of advanced RESTful design because it allows the API to return not just data, but also links that guide the client on what actions can be performed next. Instead of simply receiving raw data, the client can navigate the API dynamically using the links provided in the response. This is the core idea behind HATEOAS.
 
-This approach benefits client developers because, without hypermedia, they would need to rely on static documentation to understand and hardcode all possible endpoints. In contrast, with HATEOAS, the API becomes self-describing, allowing clients to discover available resources and actions at runtime by following links, similar to navigating a website.
+This approach benefits client developers because, without hypermedia, they would need to rely on static documentation to understand and hardcode all possible endpoints. In contrast, with HATEOAS, the API becomes self-describing and allows clients to discover available resources and actions at runtime by following links, similar to navigating a website.
+
 
 ---
 ## Part 2
@@ -274,22 +276,23 @@ IDs versus returning the full room objects? Consider network bandwidth and clien
 Processing.
 
 ### A:
-Returning only IDs uses less data per request, as the response size is smaller, which reduces network bandwidth usage and makes it faster to transfer. However, because the client does not receive the full room details, it may need to make additional requests to retrieve more information and therefore increasing the total number of requests.
+Returning only IDs uses less data per request as the response size is smaller, which reduces network bandwidth usage and makes it faster to transfer. However, because the client does not receive the full room details, it may need to make additional requests to retrieve more information and therefore increasing the total number of requests.
 
-On the other hand, returning full room objects provides all the necessary data in a single response, making it more convenient for the client and reducing the need for multiple requests. However, this comes at the cost of increased bandwidth usage as the response size is larger which can impact performance when dealing with a large number of objects.
+On the other hand, returning full room objects provides all the necessary data in a single response. This makes it more convenient for the client and reduces the need for multiple requests. However, this comes at the cost of increased bandwidth usage as the response size is larger which can impact performance when dealing with a large number of objects.
 
 Overall, returning full objects is more suitable for smaller datasets where convenience is important while returning only IDs is more efficient for larger datasets where minimising network usage is a priority.
+
 
 ### Q:
 >Is the DELETE operation idempotent in your implementation? Provide a detailed
 justification by describing what happens if a client mistakenly sends the exact same DELETE request for a room multiple times
 
 ### A:
-The DELETE operation is idempotent in my implementation because performing the same request multiple times results in the same final state. Idempotent means that repeating an operation does not change the outcome beyond the initial execution.
+Idempotent means that repeating an operation does not change the outcome beyond the initial execution. The DELETE operation is idempotent in my implementation because performing the same request multiple times results in the same final state. 
 
 For example, if a client sends a DELETE request for the room “LG01”, the first request will return a 200 OK response and the room will be successfully removed from the DataStorage. If the client mistakenly sends the same DELETE request again, the API will return a 404 Not Found response because the room no longer exists.
 
-Although the response differs between the first and subsequent requests, the final state of the system remains the same, as the room has already been deleted and cannot be deleted again. This confirms that the DELETE operation is idempotent in this implementation.
+Although the response differs between the first and subsequent requests, the final state of the system remains the same as the room has already been deleted and cannot be deleted again. This confirms that the DELETE operation is idempotent in this implementation.
 
 ---
 ## Part 3
@@ -301,23 +304,22 @@ a different format, such as text/plain or application/xml. How does JAX-RS handl
 Mismatch?
 
 ### A:
-The @Consumes(MediaType.APPLICATION_JSON) annotation restricts the POST method so that it only accepts request bodies with the Content-Type: application/json header. If a client sends data in another format, such as text/plain or application/xml, JAX-RS rejects the request with 415 Unsupported Media Type. This happens during request matching, before the resource method is executed, because the runtime checks the request Content-Type against the method’s @Consumes annotation.
+The @Consumes(MediaType.APPLICATION_JSON) annotation restricts the POST method so that it only accepts request bodies with the Content-Type: application/json header. If a client sends data in another format, such as text/plain or application/xml, JAX-RS rejects the request with 415 Unsupported Media Type. This happens during request matching (before the resource method is executed) because the runtime checks the request Content-Type against the method’s @Consumes annotation.
 
-In my implementation, the global ExceptionMapper<Throwable> is only used as a final safety net for unexpected server-side exceptions such as NullPointerException. It should not normally override the expected 415 response because the unsupported media type is handled by the JAX-RS runtime before the method runs. Therefore, a non-JSON request should return 415 unless an additional unexpected server-side exception occurs.
+In my implementation, the global ExceptionMapper is only used as a final safety net for unexpected server-side exceptions such as NullPointerException. It should not normally override the expected 415 response because the unsupported media type is handled by the JAX-RS runtime before the method runs. Therefore, a non-JSON request should return 415 unless an additional unexpected server-side exception occurs.
+
 
 ### Q:
->You implemented this filtering using @QueryParam. Contrast this with an alterna-
-tive design where the type is part of the URL path (e.g., /api/vl/sensors/type/CO2). Why
+>You implemented this filtering using @QueryParam. Contrast this with an alternative design where the type is part of the URL path (e.g., /api/vl/sensors/type/CO2). Why
 is the query parameter approach generally considered superior for filtering and searching
 Collections
 
 ### A:
-The alternative to query parameters is using path parameters. Path parameters are mainly used to identify specific resources. In my API, this is used when specifying a particular sensor, for example /sensors/{sensorId}. Using this same approach for filtering would not be ideal, as it would make the URL structure more complex and harder to manage.
+The alternative to query parameters is using path parameters. Path parameters are mainly used to identify specific resources. This is used when specifying a particular sensor in my API, for example /sensors/{sensorId}. Using this same approach for filtering would not be ideal as it would make the URL structure more complex and harder to manage.
 
 Query parameters, on the other hand, are more suitable for filtering because they represent search conditions rather than resource identities. For example, /sensors?type=CO2 or /sensors?type=Temperature filters the sensor collection based on the type. This keeps the base resource (/sensors) consistent while allowing flexible filtering.
 
 Another advantage of query parameters is that they are optional and scalable. The API can return all sensors when no filter is provided, and easily support multiple filters in the future, such as /sensors?type=CO2&status=ACTIVE, without making the URL difficult to read.
-
 
 ---
 ## Part 4:
@@ -329,13 +331,13 @@ to defining every nested path (e.g., sensors/{id}/readings/{rid}) in one massive
 troller class?
 
 ### A:
-A sub-resource locator is a way of structuring an API where a main resource delegates requests to another resource class based on the path. In my implementation, the main resource (SensorResource) defines the path and returns an instance of the sub-resource (SensorReadingResource), while the actual logic for handling the request is implemented in the separate class.
+A sub-resource locator is a way of structuring an API where a main resource delegates requests to another resource class based on the path. In my implementation, the main resource (SensorResource) defines the path and returns an instance of the sub-resource (SensorReadingResource). The actual logic for handling the request is implemented in the separate class.
 
-This helps manage complexity by separating responsibilities, as each class focuses on a specific part of the API. For example, SensorResource handles sensors, while SensorReadingResource handles readings. This makes the code easier to understand and maintain, as changes to one part of the API do not affect the other.
+This helps manage complexity by separating responsibilities, as each class focuses on a specific part of the API. For example, SensorResource handles sensors while SensorReadingResource handles readings. This makes the code easier to understand and maintain, as changes to one part of the API do not affect the other.
 
 It also improves scalability, as new sub-resources can be added without making the main resource class overly complex. In contrast, defining all nested paths in a single class would result in a large and difficult to maintain code with repeated logic and poor organisation.
-
 Overall, sub-resource locators promote a more modular design, allowing components to be reused and extended independently as the API grows.
+
 
 ---
 ## Part 5:
@@ -347,9 +349,9 @@ Overall, sub-resource locators promote a more modular design, allowing component
 ### A:
 A 404 Not Found error is used when the resource specified in the URL does not exist. However, when the issue is a missing reference inside a valid JSON payload, the request itself is still valid and has reached the correct endpoint. This makes 422 Unprocessable Entity more semantically accurate.
 
-A 422 error is used when the server understands the request format and can process it, but the data within the request is logically incorrect. In this case, the JSON structure is valid, but the reference inside it (such as a roomId that does not exist) is invalid.
+A 422 error is used when the server understands the request format and can process it but the data within the request is logically incorrect. In this case, the JSON structure is valid, but the reference inside it (such as a roomId that does not exist) is invalid.
 
-Therefore, 422 is more appropriate than 404 because the problem is not that the resource in the URL is missing, but that the data within the request contains a semantic error. This provides clearer feedback to the client about what needs to be corrected.
+Therefore, 422 is more appropriate than 404 because the problem is not that the resource in the URL is missing but that the data within the request contains a semantic error. This provides clearer feedback to the client about what needs to be corrected.
 
 ### Q:
 >From a cybersecurity standpoint, explain the risks associated with exposing
@@ -361,7 +363,7 @@ Exposing internal Java stack traces to external API consumers is a security risk
 
 This information can be useful to an attacker, as it effectively provides a map of how the system is built. For example, attackers can identify specific classes and methods, understand how requests are processed, and determine which libraries are being used. They could then research known vulnerabilities in those libraries or attempt to exploit weak points in the application’s logic.
 
-Additionally, file paths and package names can reveal details about the server environment and project structure, which further increases the risk of targeted attacks.
+Additionally, file paths and package names can reveal details about the server environment and project structure. This further increases the risk of targeted attacks.
 
 To prevent this, a global ExceptionMapper is used to hide internal error details and return a generic error response instead. This ensures that sensitive implementation details are not exposed, improving the overall security of the API.
 
@@ -373,7 +375,7 @@ source method?
 ### A:
 If I manually inserted Logger.info() statements inside every resource method, this would not only take a long time to implement but would also quickly clutter the code, making it repetitive and harder to maintain. Any changes to logging would require modifying multiple methods, increasing the risk of inconsistencies.
 
-Using a JAX-RS filter is more effective because logging is a cross-cutting concern that applies to all endpoints. The filter runs automatically before and after each request, keeping the logging logic in one place. This keeps resource classes clean and focused on their main responsibilities, while ensuring consistent logging across the entire API. It also makes the system easier to maintain and scale, as changes only need to be made in a single location.
+Using a JAX-RS filter is more effective because logging is a cross-cutting concern that applies to all endpoints. The filter runs automatically before and after each request, keeping the logging logic in one place. This keeps resource classes clean and focused on their main responsibilities while ensuring consistent logging across the entire API. It also makes the system easier to maintain and scale as changes only need to be made in a single location.
 
 
 
